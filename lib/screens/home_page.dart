@@ -28,10 +28,30 @@ class _HomePageState extends State<HomePage> {
     "new",
   ];
 
+  final scrollController = ScrollController();
+  bool showCarousel = true;
+
   @override
   void initState() {
     super.initState();
     Provider.of<ProductsProvider>(context, listen: false).getProductsFromAPI();
+    scrollController.addListener(() {
+      if (scrollController.position.pixels == 0) {
+        setState(() {
+          showCarousel = true;
+        });
+      } else {
+        setState(() {
+          showCarousel = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -98,112 +118,117 @@ class _HomePageState extends State<HomePage> {
           )
         ],
       ),
-      body: Column(children: [
-        Row(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SizedBox(
-                height: 50,
-                width: 360,
-                child: TextField(
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: const Color(0xfff1f1f1),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
+      body: Column(
+        children: [
+          Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SizedBox(
+                  height: 50,
+                  width: 360,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xfff1f1f1),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                      hintText: "Search for brands",
+                      prefixIcon: const Icon(Icons.search),
+                      prefixIconColor: Colors.grey,
                     ),
-                    hintText: "Search for brands",
-                    prefixIcon: const Icon(Icons.search),
-                    prefixIconColor: Colors.grey,
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-        CarouselSlider(
-          options: CarouselOptions(
-            height: 200,
-            aspectRatio: 16 / 9,
-            viewportFraction: 0.8,
-            initialPage: 0,
-            enableInfiniteScroll: true,
-            reverse: false,
-            autoPlay: true,
-            autoPlayInterval: const Duration(seconds: 3),
-            autoPlayAnimationDuration: const Duration(milliseconds: 800),
-            autoPlayCurve: Curves.fastOutSlowIn,
-            enlargeCenterPage: true,
-            scrollDirection: Axis.horizontal,
+            ],
           ),
-          items: productsProvider.products.take(5).map((product) {
-            return Builder(
-              builder: (BuildContext context) {
-                return SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  child: Container(
-                    decoration:
-                        BoxDecoration(borderRadius: BorderRadius.circular(12),image: DecorationImage(image: NetworkImage(product.images[0]),fit:BoxFit.fill )),
-                    // child: Image.network(
-                    //   product.images[0],
-                    //   fit: BoxFit.cover,
-                    // ),
+          Visibility(
+            visible: showCarousel,
+            child: CarouselSlider(
+              options: CarouselOptions(
+                height: 200,
+                aspectRatio: 16 / 9,
+                viewportFraction: 0.8,
+                initialPage: 0,
+                enableInfiniteScroll: true,
+                reverse: false,
+                autoPlay: true,
+                autoPlayInterval: const Duration(seconds: 3),
+                autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                autoPlayCurve: Curves.fastOutSlowIn,
+                enlargeCenterPage: true,
+                scrollDirection: Axis.horizontal,
+              ),
+              items: productsProvider.products.take(5).map((product) {
+                return Builder(
+                  builder: (BuildContext context) {
+                    return SizedBox(
+                      width: MediaQuery.of(context).size.width,
+                      child: Container(
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            image: DecorationImage(
+                                image: NetworkImage(product.images[0]),
+                                fit: BoxFit.fill)),
+                      ),
+                    );
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(
+            height: 10,
+          ),
+          SizedBox(
+            height: 50,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        selectedCategory = categories[index];
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: selectedCategory == categories[index]
+                          ? Colors.black
+                          : Colors.grey.withOpacity(0.8),
+                    ),
+                    child: Text(
+                      categories[index],
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
                 );
               },
-            );
-          }).toList(),
-        ),
-        const SizedBox(
-          height: 10,
-        ),
-        SizedBox(
-          height: 50,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      selectedCategory = categories[index];
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedCategory == categories[index]
-                        ? Colors.black
-                        : Colors.grey.withOpacity(0.8),
-                  ),
-                  child: Text(
-                    categories[index],
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        Expanded(
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, // 2 cards per row
-              childAspectRatio: 0.76,
             ),
-            itemCount: min(20, filteredProducts.length),
-            itemBuilder: (context, index) {
-              final product = filteredProducts[index];
-              return ProductCard(product: product);
-            },
           ),
-        ),
-        const SizedBox(
-          height: 20,
-        )
-      ]),
+          Expanded(
+            child: GridView.builder(
+              controller: scrollController,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, // 2 cards per row
+                childAspectRatio: 0.76,
+              ),
+              itemCount: min(20, filteredProducts.length),
+              itemBuilder: (context, index) {
+                final product = filteredProducts[index];
+                return ProductCard(product: product);
+              },
+            ),
+          ),
+          const SizedBox(
+            height: 20,
+          ),
+        ],
+      ),
     );
   }
 }
